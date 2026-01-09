@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class IngestRequest(BaseModel):
     case_type: str
@@ -19,7 +19,7 @@ class Source(BaseModel):
     case_types: str
     file_id: str
     date: str
-    pdf_url: str
+    pdf_url: Optional[str] = None
 
 class QueryResponse(BaseModel):
     response: str

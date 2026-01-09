@@ -8,3 +8,6 @@ fastapi
 uvicorn
 cloudinary
 python-multipart
+pyjwt
+requests
+cryptography
