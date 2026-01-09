@@ -1,9 +1,11 @@
 from fastapi import FastAPI
-from routers.chat import router as chat_router
+from app.routers.chat import router as chat_router
+from app.routers.user import router as user_router
 
 app = FastAPI()
 
 app.include_router(chat_router, prefix="/api", tags=["chat"])
+app.include_router(user_router, prefix="/api", tags=["users"])
 
 @app.get("/")
 def read_root():

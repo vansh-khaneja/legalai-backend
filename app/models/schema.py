@@ -24,3 +24,12 @@ class Source(BaseModel):
 class QueryResponse(BaseModel):
     response: str
     sources: List[Source]
+
+# User schemas
+class CreateUserRequest(BaseModel):
+    email: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    created_at: Optional[str] = None

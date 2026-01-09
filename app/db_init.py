@@ -63,7 +63,7 @@ def init_db():
     cursor.close()
     conn.close()
 
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
 
 
 if __name__ == "__main__":

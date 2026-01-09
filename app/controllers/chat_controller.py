@@ -1,10 +1,11 @@
 from fastapi import UploadFile
-from services.rag_service import RagService
-from services.embedding_service import EmbeddingService
-from services.chat_service import ChatService
-from services.cloudinary_service import CloudinaryService
-from repositories.vector_repository import VectorRepository
+from app.services.rag_service import RagService
+from app.services.embedding_service import EmbeddingService
+from app.services.chat_service import ChatService
+from app.services.s3_service import S3Service
+from app.repositories.vector_repository import VectorRepository
 import uuid
+import os
 
 class ChatController:
 
@@ -13,12 +14,17 @@ class ChatController:
         self.embedding_service = EmbeddingService()
         self.rag_service = RagService()
         self.chat_service = ChatService()
-        self.cloudinary_service = CloudinaryService()
+        self.s3_service = S3Service()
 
     async def ingest(self, file: UploadFile, case_type: str, date: str):
-        # Upload PDF to Cloudinary
-        cloudinary_response = self.cloudinary_service.upload_file_stream(file.file, file.filename)
-        pdf_url = cloudinary_response["secure_url"]
+        # Generate a stable file_id and use it as the S3 object name
+        file_id = str(uuid.uuid4())
+        ext = os.path.splitext(file.filename)[1]
+        s3_filename = f"{file_id}{ext}"
+
+        # Upload to storage using file_id-based name
+        s3_response = self.s3_service.upload_file_stream(file.file, s3_filename)
+        pdf_url = s3_response["url"]
         
         # Reset file pointer for text extraction
         await file.seek(0)
@@ -27,8 +33,6 @@ class ChatController:
         chunks = self.rag_service.chunk_text(text)
 
         embeddings = self.embedding_service.embed(chunks)
-
-        file_id = str(uuid.uuid4())
 
         self.vector_repo.add(
             embeddings=embeddings,

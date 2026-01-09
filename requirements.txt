@@ -6,9 +6,10 @@ langchain-text-splitters
 pypdf2
 fastapi
 uvicorn
-cloudinary
 python-multipart
 pyjwt
 requests
 cryptography
 psycopg2-binary
+boto3
+supabase

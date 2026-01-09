@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends
-from controllers.chat_controller import ChatController
-from models.schema import IngestResponse, QueryRequest, QueryResponse
-from services.auth_service import get_current_user_email
+from app.controllers.chat_controller import ChatController
+from app.models.schema import IngestResponse, QueryRequest, QueryResponse
+from app.services.auth_service import get_current_user_email
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 

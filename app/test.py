@@ -1,6 +1,56 @@
-from services.auth_service import verify_jwt
+import os
+import sys
 
-token = "eyJhbGciOiJFUzI1NiIsImtpZCI6ImY0YWI1OTQ0LTBkMjktNDFhNC05M2E1LWI4MWU1MmY3Yjc0NSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3hoZWlvdHF1eXB0cmllbHNtaXRvLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI2NTczMjFiZS1kZTA4LTRmNzUtYjkwNi0xMjM1YjQ5YWZlYzciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY3OTY1MDY3LCJpYXQiOjE3Njc5NjE0NjcsImVtYWlsIjoidmFuc2hraGFuZWphMjAwNEBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoidmFuc2hraGFuZWphMjAwNEBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJzdWIiOiI2NTczMjFiZS1kZTA4LTRmNzUtYjkwNi0xMjM1YjQ5YWZlYzcifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc2Nzk2MTQ2N31dLCJzZXNzaW9uX2lkIjoiOGUyNTdjYmYtZDc0OS00MGM4LWE0YzUtNGU5ZjYxYjM0OTY4IiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.CdDL8SFafFyE9PQJmJ1Es9xzrzl_yX3X465QYk-rr9BdjQCsv_tX52AXNIAmOwvK6MNIAD2fonApU5UgLaJOS"
-payload = verify_jwt(token)
-print("✅ VERIFIED PAYLOAD:")
-print(payload)
+# Ensure project root is on sys.path so we can import `app.*` while running from app/
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from app.db import get_connection
+from app.repositories.user_repository import create_user
+from app.repositories.chat_repository import create_chat
+from app.repositories.message_repository import add_message, get_last_messages
+
+
+def main():
+	email = "testuser@example.com"
+	print(f"➡️  Adding user: {email}")
+
+	user_id = create_user(email)
+	if user_id:
+		print(f"✅ Created new user id: {user_id}")
+	else:
+		# If user already exists, fetch the existing id
+		conn = get_connection()
+		cur = conn.cursor()
+		cur.execute("SELECT id FROM users WHERE email = %s;", (email,))
+		row = cur.fetchone()
+		cur.close()
+		conn.close()
+		if row:
+			user_id = row[0]
+			print(f"ℹ️  User already exists. id: {user_id}")
+		else:
+			print("❌ Failed to create or find user.")
+			return
+
+	# Create a chat for this user
+	print("➡️  Creating chat for user")
+	chat_id = create_chat(user_id)
+	print(f"✅ chat_id: {chat_id}")
+
+	# Insert a pair of messages: human + AI
+	print("➡️  Inserting messages (human + AI)")
+	add_message(chat_id, "user", "Hello, I need help with a case.")
+	add_message(chat_id, "assistant", "Sure — can you share more details?")
+
+	# Fetch and print last messages
+	print("➡️  Fetching last messages")
+	msgs = get_last_messages(chat_id, limit=5)
+	print("✅ Chat history (oldest → newest):")
+	for i, (role, content) in enumerate(msgs, start=1):
+		print(f"{i}. {role}: {content}")
+
+
+if __name__ == "__main__":
+	main()
