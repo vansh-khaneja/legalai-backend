@@ -7,9 +7,7 @@ class UserController:
         """Create a new user with the given email."""
         user_id = create_user(user_request.email)
 
-        if user_id is None:
-            # User might already exist, let's try to get their info
-            # For now, we'll return a basic response
-            return UserResponse(id=0, email=user_request.email, created_at=None)
-
-        return UserResponse(id=user_id, email=user_request.email)
+        if user_id:
+            return UserResponse(id=user_id, email=user_request.email)
+        else:
+            raise ValueError(f"Failed to create or find user with email {user_request.email}")

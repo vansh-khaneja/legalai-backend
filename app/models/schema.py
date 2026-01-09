@@ -30,6 +30,26 @@ class CreateUserRequest(BaseModel):
     email: str
 
 class UserResponse(BaseModel):
-    id: int
+    id: str  # UUID as string
     email: str
+    created_at: Optional[str] = None
+
+# Chat schemas
+class ChatResponse(BaseModel):
+    id: str  # UUID as string
+    user_id: str  # UUID as string
+    created_at: Optional[str] = None
+
+class ChatListResponse(BaseModel):
+    chats: List[Dict[str, str]]  # List of {"id": str, "created_at": str}
+
+class AddMessageRequest(BaseModel):
+    chat_id: str
+    role: str  # 'user' or 'assistant'
+    content: str
+
+class MessageResponse(BaseModel):
+    chat_id: str
+    role: str
+    content: str
     created_at: Optional[str] = None

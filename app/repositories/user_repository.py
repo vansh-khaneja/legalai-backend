@@ -16,9 +16,31 @@ def create_user(email: str):
 		(email,)
 	)
 
-	user_id = cur.fetchone()
+	result = cur.fetchone()
 	conn.commit()
 	cur.close()
 	conn.close()
 
-	return user_id[0] if user_id else None
+	if result:
+		return str(result[0])  # Convert UUID to string
+	else:
+		# User already exists, get their ID
+		return get_user_by_email(email)["id"] if get_user_by_email(email) else None
+
+
+def get_user_by_email(email: str):
+	conn = get_connection()
+	cur = conn.cursor()
+
+	cur.execute(
+		"""
+		SELECT id, email FROM users WHERE email = %s;
+		""",
+		(email,)
+	)
+
+	user = cur.fetchone()
+	cur.close()
+	conn.close()
+
+	return {"id": str(user[0]), "email": user[1]} if user else None

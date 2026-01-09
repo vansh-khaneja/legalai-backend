@@ -9,7 +9,7 @@ if PROJECT_ROOT not in sys.path:
 from app.db import get_connection
 from app.repositories.user_repository import create_user
 from app.repositories.chat_repository import create_chat
-from app.repositories.message_repository import add_message, get_last_messages
+from app.repositories.message_repository import add_message
 
 
 def main():
@@ -44,12 +44,6 @@ def main():
 	add_message(chat_id, "user", "Hello, I need help with a case.")
 	add_message(chat_id, "assistant", "Sure — can you share more details?")
 
-	# Fetch and print last messages
-	print("➡️  Fetching last messages")
-	msgs = get_last_messages(chat_id, limit=5)
-	print("✅ Chat history (oldest → newest):")
-	for i, (role, content) in enumerate(msgs, start=1):
-		print(f"{i}. {role}: {content}")
 
 
 if __name__ == "__main__":
