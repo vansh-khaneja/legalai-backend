@@ -53,3 +53,15 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     created_at: Optional[str] = None
+
+class ChatMessagesResponse(BaseModel):
+    chat_id: str
+    messages: List[Dict[str, str]]  # List of {"role": str, "content": str, "created_at": str}
+
+class MessageListResponse(BaseModel):
+    messages: List[Dict[str, str]]  # List of {"role": str, "content": str, "created_at": str}
+
+class MessageListResponse(BaseModel):
+    chat_id: str
+    messages: List[Dict[str, str]]  # [{"role": str, "content": str, "created_at": str}, ...]
+    

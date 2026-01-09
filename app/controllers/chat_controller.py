@@ -6,8 +6,8 @@ from app.services.s3_service import S3Service
 from app.repositories.vector_repository import VectorRepository
 from app.repositories.user_repository import get_user_by_email, create_user
 from app.repositories.chat_repository import create_chat, get_user_chats
-from app.repositories.message_repository import add_message
-from app.models.schema import ChatResponse, AddMessageRequest, MessageResponse, ChatListResponse
+from app.repositories.message_repository import add_message, get_chat_messages
+from app.models.schema import ChatResponse, AddMessageRequest, MessageResponse, ChatListResponse, ChatMessagesResponse
 import uuid
 import os
 
@@ -64,6 +64,25 @@ class ChatController:
         chats = get_user_chats(user["id"])
 
         return ChatListResponse(chats=chats)
+
+    def get_chat_messages(self, chat_id: str, user_email: str, limit: int = None, offset: int = None) -> ChatMessagesResponse:
+        """Get messages for a specific chat with pagination."""
+        # First verify the user owns this chat
+        user = get_user_by_email(user_email)
+        if not user:
+            raise ValueError(f"User with email {user_email} not found")
+
+        # Get all chats for this user to verify ownership
+        user_chats = get_user_chats(user["id"])
+        chat_ids = [chat["id"] for chat in user_chats]
+
+        if chat_id not in chat_ids:
+            raise ValueError(f"Chat {chat_id} not found or doesn't belong to user {user_email}")
+
+        # Get messages for this chat with pagination
+        messages = get_chat_messages(chat_id, limit, offset)
+
+        return ChatMessagesResponse(chat_id=chat_id, messages=messages)
 
     async def ingest(self, file: UploadFile, case_type: str, date: str):
         # Generate a stable file_id and use it as the S3 object name

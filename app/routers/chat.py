@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends
 from app.controllers.chat_controller import ChatController
-from app.models.schema import IngestResponse, QueryRequest, QueryResponse, ChatResponse, AddMessageRequest, MessageResponse, ChatListResponse
+from app.models.schema import IngestResponse, QueryRequest, QueryResponse, ChatResponse, AddMessageRequest, MessageResponse, ChatListResponse, ChatMessagesResponse
 from app.services.auth_service import get_current_user_email
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -24,6 +24,22 @@ async def get_chats(user_email: str = Depends(get_current_user_email)):
     Returns a list of chats with their IDs and creation timestamps.
     """
     return chat_controller.get_user_chats(user_email)
+
+@router.get("/{chat_id}", response_model=ChatMessagesResponse)
+async def get_chat_messages(
+    chat_id: str,
+    user_email: str = Depends(get_current_user_email),
+    limit: int = None,
+    offset: int = None
+):
+    """
+    Get messages for a specific chat with pagination.
+
+    - **chat_id**: The ID of the chat to retrieve messages for
+    - **limit**: Optional number of messages to return (pagination)
+    - **offset**: Optional number of messages to skip (pagination)
+    """
+    return chat_controller.get_chat_messages(chat_id, user_email, limit, offset)
 
 @router.post("/message", response_model=MessageResponse)
 async def add_message(message_request: AddMessageRequest, user_email: str = Depends(get_current_user_email)):
