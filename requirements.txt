@@ -11,3 +11,4 @@ python-multipart
 pyjwt
 requests
 cryptography
+psycopg2-binary
