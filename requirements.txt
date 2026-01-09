@@ -1,0 +1,10 @@
+openai
+python-dotenv
+qdrant-client
+langchain
+langchain-text-splitters
+pypdf2
+fastapi
+uvicorn
+cloudinary
+python-multipart
