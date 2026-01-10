@@ -44,3 +44,21 @@ def get_user_by_email(email: str):
 	conn.close()
 
 	return {"id": str(user[0]), "email": user[1]} if user else None
+
+
+def is_user_premium(email: str):
+	conn = get_connection()
+	cur = conn.cursor()
+
+	cur.execute(
+		"""
+		SELECT premium FROM users WHERE email = %s;
+		""",
+		(email,)
+	)
+
+	result = cur.fetchone()
+	cur.close()
+	conn.close()
+
+	return result[0] if result else False

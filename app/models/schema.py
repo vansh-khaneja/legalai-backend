@@ -34,6 +34,10 @@ class UserResponse(BaseModel):
     email: str
     created_at: Optional[str] = None
 
+class PremiumCheckResponse(BaseModel):
+    email: str
+    is_premium: bool
+
 # Chat schemas
 class ChatResponse(BaseModel):
     id: str  # UUID as string
