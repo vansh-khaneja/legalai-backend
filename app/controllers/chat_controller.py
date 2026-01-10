@@ -2,7 +2,7 @@ from fastapi import UploadFile
 from app.services.rag_service import RagService
 from app.services.embedding_service import EmbeddingService
 from app.services.chat_service import ChatService
-from app.services.s3_service import S3Service
+from app.services.cloudinary_service import CloudinaryService
 from app.repositories.vector_repository import VectorRepository
 from app.repositories.user_repository import get_user_by_email, create_user
 from app.repositories.chat_repository import create_chat, get_user_chats
@@ -18,7 +18,7 @@ class ChatController:
         self.embedding_service = EmbeddingService()
         self.rag_service = RagService()
         self.chat_service = ChatService()
-        self.s3_service = S3Service()
+        self.cloudinary_service = CloudinaryService()
 
     def create_chat(self, user_email: str) -> ChatResponse:
         """Create a new chat for the user with the given email."""
@@ -85,14 +85,14 @@ class ChatController:
         return ChatMessagesResponse(chat_id=chat_id, messages=messages)
 
     async def ingest(self, file: UploadFile, case_type: str, date: str):
-        # Generate a stable file_id and use it as the S3 object name
+        # Generate a stable file_id and use it as the filename
         file_id = str(uuid.uuid4())
         ext = os.path.splitext(file.filename)[1]
-        s3_filename = f"{file_id}{ext}"
+        filename = f"{file_id}{ext}"
 
-        # Upload to storage using file_id-based name
-        s3_response = self.s3_service.upload_file_stream(file.file, s3_filename)
-        pdf_url = s3_response["url"]
+        # Upload to Cloudinary
+        upload_response = self.cloudinary_service.upload_file_stream(file.file, filename, folder="legal-documents")
+        pdf_url = upload_response["url"]
         
         # Reset file pointer for text extraction
         await file.seek(0)
@@ -120,10 +120,40 @@ class ChatController:
         # Retrieve top k results
         results = self.vector_repo.retrieve_top_k(query_embedding, top_k=5)
         
+        # Temporary hardcoded dummy results
+        # results = [
+        #     {
+        #         "score": 0.89,
+        #         "text": "According to Section 420 of the Indian Penal Code, cheating and dishonestly inducing delivery of property is punishable with imprisonment up to 7 years and fine.",
+        #         "case_types": "Criminal Law - Fraud",
+        #         "file_id": "dummy-file-001",
+        #         "date": "2024-01-15",
+        #         "pdf_url": "#"
+        #     },
+        #     {
+        #         "score": 0.76,
+        #         "text": "The Supreme Court in landmark judgment held that the burden of proof lies on the prosecution to establish guilt beyond reasonable doubt.",
+        #         "case_types": "Criminal Procedure",
+        #         "file_id": "dummy-file-002",
+        #         "date": "2023-11-20",
+        #         "pdf_url": "#"
+        #     },
+        #     {
+        #         "score": 0.65,
+        #         "text": "Under Article 21 of the Constitution, right to life includes right to live with dignity and all aspects that make life meaningful.",
+        #         "case_types": "Constitutional Law",
+        #         "file_id": "dummy-file-003",
+        #         "date": "2024-02-10",
+        #         "pdf_url": "#"
+        #     }
+        # ]
+        
         # Build context from results
         context = "\n".join([result["text"] for result in results])
+        # context = ""
         
         # Generate response
         response = self.chat_service.generate_response(query, context)
         
         return {"response": response, "sources": results}
+        

@@ -1,6 +1,7 @@
 import psycopg2
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -13,13 +14,25 @@ def init_db():
     conn = psycopg2.connect(DATABASE_URL)
     cursor = conn.cursor()
 
+    # Enable pgcrypto for gen_random_uuid() (important for Supabase/Postgres)
+    cursor.execute("""
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    """)
+
     # USERS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email TEXT UNIQUE,
+        premium BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
     );
+    """)
+
+    # In case users table already existed without premium column
+    cursor.execute("""
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS premium BOOLEAN DEFAULT FALSE;
     """)
 
     # CHATS
