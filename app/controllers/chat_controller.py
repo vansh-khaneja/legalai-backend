@@ -4,7 +4,6 @@ from app.services.embedding_service import EmbeddingService
 from app.services.chat_service import ChatService
 from app.services.cloudinary_service import CloudinaryService
 from app.repositories.vector_repository import VectorRepository
-from app.repositories.user_repository import get_user_by_email, create_user
 from app.repositories.chat_repository import create_chat, get_user_chats
 from app.repositories.message_repository import add_message, get_chat_messages
 from app.models.schema import ChatResponse, AddMessageRequest, MessageResponse, ChatListResponse, ChatMessagesResponse
@@ -20,29 +19,34 @@ class ChatController:
         self.chat_service = ChatService()
         self.cloudinary_service = CloudinaryService()
 
-    def create_chat(self, user_email: str) -> ChatResponse:
-        """Create a new chat for the user with the given email."""
-        # Get user by email, create if doesn't exist
-        user = get_user_by_email(user_email)
-        if not user:
-            # User doesn't exist, create them
-            user_id = create_user(user_email)
-            if not user_id:
-                raise ValueError(f"Failed to create user with email {user_email}")
-            user = {"id": user_id, "email": user_email}
+    def create_chat(self, user_id: str) -> ChatResponse:
+        """Create a new chat for the user with the given user ID."""
+        # Verify user exists by checking if they have any chats
+        user_chats = get_user_chats(user_id)
+        if user_chats is None:
+            raise ValueError(f"User with ID {user_id} not found")
 
         # Create new chat for this user
-        chat_id = create_chat(user["id"])
+        chat_id = create_chat(user_id)
         if not chat_id:
-            raise ValueError(f"Failed to create chat for user {user_email}")
+            raise ValueError(f"Failed to create chat for user {user_id}")
 
-        return ChatResponse(id=chat_id, user_id=user["id"])
+        return ChatResponse(id=chat_id, user_id=user_id)
 
-    def add_message(self, message_request: AddMessageRequest) -> MessageResponse:
+    def add_message(self, message_request: AddMessageRequest, user_id: str) -> MessageResponse:
         """Add a message to a chat."""
         # Validate role
         if message_request.role not in ['user', 'assistant']:
             raise ValueError(f"Invalid role: {message_request.role}. Must be 'user' or 'assistant'")
+
+        # Verify user owns this chat
+        user_chats = get_user_chats(user_id)
+        if user_chats is None:
+            raise ValueError(f"User with ID {user_id} not found")
+
+        chat_ids = [chat["id"] for chat in user_chats]
+        if message_request.chat_id not in chat_ids:
+            raise ValueError(f"Chat {message_request.chat_id} not found or doesn't belong to user {user_id}")
 
         # Add message to database
         add_message(message_request.chat_id, message_request.role, message_request.content)
@@ -53,31 +57,26 @@ class ChatController:
             content=message_request.content
         )
 
-    def get_user_chats(self, user_email: str) -> ChatListResponse:
+    def get_user_chats(self, user_id: str) -> ChatListResponse:
         """Get all chats for a user."""
-        # Get user by email
-        user = get_user_by_email(user_email)
-        if not user:
-            raise ValueError(f"User with email {user_email} not found")
-
         # Get all chats for this user
-        chats = get_user_chats(user["id"])
+        chats = get_user_chats(user_id)
+        if chats is None:
+            raise ValueError(f"User with ID {user_id} not found")
 
         return ChatListResponse(chats=chats)
 
-    def get_chat_messages(self, chat_id: str, user_email: str, limit: int = None, offset: int = None) -> ChatMessagesResponse:
+    def get_chat_messages(self, chat_id: str, user_id: str, limit: int = None, offset: int = None) -> ChatMessagesResponse:
         """Get messages for a specific chat with pagination."""
-        # First verify the user owns this chat
-        user = get_user_by_email(user_email)
-        if not user:
-            raise ValueError(f"User with email {user_email} not found")
-
         # Get all chats for this user to verify ownership
-        user_chats = get_user_chats(user["id"])
+        user_chats = get_user_chats(user_id)
+        if user_chats is None:
+            raise ValueError(f"User with ID {user_id} not found")
+
         chat_ids = [chat["id"] for chat in user_chats]
 
         if chat_id not in chat_ids:
-            raise ValueError(f"Chat {chat_id} not found or doesn't belong to user {user_email}")
+            raise ValueError(f"Chat {chat_id} not found or doesn't belong to user {user_id}")
 
         # Get messages for this chat with pagination
         messages = get_chat_messages(chat_id, limit, offset)

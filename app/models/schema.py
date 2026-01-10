@@ -27,7 +27,9 @@ class QueryResponse(BaseModel):
 
 # User schemas
 class CreateUserRequest(BaseModel):
+
     email: str
+    user_id: str
 
 class UserResponse(BaseModel):
     id: str  # UUID as string
@@ -35,7 +37,7 @@ class UserResponse(BaseModel):
     created_at: Optional[str] = None
 
 class PremiumCheckResponse(BaseModel):
-    email: str
+    user_id: str
     is_premium: bool
 
 # Chat schemas

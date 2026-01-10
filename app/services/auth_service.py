@@ -100,15 +100,34 @@ def get_current_user_email(credentials: HTTPAuthorizationCredentials = Security(
     try:
         token = credentials.credentials
         payload = verify_jwt(token)
-        
+
         # Try to get email from payload or user_metadata
         user_meta = payload.get("user_metadata", {}) or {}
         email = payload.get("email") or user_meta.get("email")
-        
+
         if not email:
             raise HTTPException(status_code=401, detail="Email not found in token")
-        
+
         return email
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
+
+
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Security(security)) -> str:
+    """Extract and verify user ID (sub) from JWT token."""
+    try:
+        token = credentials.credentials
+        payload = verify_jwt(token)
+
+        # Get user ID from 'sub' field
+        user_id = payload.get("sub")
+
+        if not user_id:
+            raise HTTPException(status_code=401, detail="User ID not found in token")
+
+        return user_id
     except HTTPException:
         raise
     except Exception as e:

@@ -2,18 +2,18 @@ import psycopg2
 from ..db import get_connection
 
 
-def create_user(email: str):
+def create_user(email: str, user_id: str):
 	conn = get_connection()
 	cur = conn.cursor()
 
 	cur.execute(
 		"""
-		INSERT INTO users (email)
-		VALUES (%s)
+		INSERT INTO users (id, email)
+		VALUES (%s, %s)
 		ON CONFLICT (email) DO NOTHING
 		RETURNING id;
 		""",
-		(email,)
+		(user_id, email)
 	)
 
 	result = cur.fetchone()
@@ -46,15 +46,15 @@ def get_user_by_email(email: str):
 	return {"id": str(user[0]), "email": user[1]} if user else None
 
 
-def is_user_premium(email: str):
+def is_user_premium(user_id: str):
 	conn = get_connection()
 	cur = conn.cursor()
 
 	cur.execute(
 		"""
-		SELECT premium FROM users WHERE email = %s;
+		SELECT premium FROM users WHERE id = %s;
 		""",
-		(email,)
+		(user_id,)
 	)
 
 	result = cur.fetchone()
